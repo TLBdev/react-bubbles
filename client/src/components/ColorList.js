@@ -1,30 +1,37 @@
 import React, { useState } from "react";
-import axios from "axios";
+
+import { axiosWithAuth } from "../utils/axiosWithAuth";
+import { Formik, Form, Field } from 'formik'
 
 const initialColor = {
   color: "",
   code: { hex: "" }
 };
 
-const ColorList = ({ colors, updateColors }) => {
-  console.log(colors);
+const ColorList = ({ colors, updateColors, checker, setChecker }) => {
+
   const [editing, setEditing] = useState(false);
   const [colorToEdit, setColorToEdit] = useState(initialColor);
 
   const editColor = color => {
     setEditing(true);
     setColorToEdit(color);
+    console.log(color)
   };
 
   const saveEdit = e => {
     e.preventDefault();
-    // Make a put request to save your updated color
-    // think about where will you get the id from...
-    // where is is saved right now?
+    axiosWithAuth()
+      .put(`/colors/${colorToEdit.id}`, colorToEdit)
+      .then(res => setChecker(++checker))
+      .catch(err => console.log(err))
   };
 
   const deleteColor = color => {
-    // make a delete request to delete this color
+    axiosWithAuth()
+      .delete(`/colors/${color.id}`)
+      .then(res => setChecker(++checker))
+      .catch(err => console.log(err))
   };
 
   return (
@@ -35,11 +42,11 @@ const ColorList = ({ colors, updateColors }) => {
           <li key={color.color} onClick={() => editColor(color)}>
             <span>
               <span className="delete" onClick={e => {
-                    e.stopPropagation();
-                    deleteColor(color)
-                  }
-                }>
-                  x
+                e.stopPropagation();
+                deleteColor(color)
+              }
+              }>
+                x
               </span>{" "}
               {color.color}
             </span>
@@ -81,7 +88,24 @@ const ColorList = ({ colors, updateColors }) => {
         </form>
       )}
       <div className="spacer" />
-      {/* stretch - build another form here to add a color */}
+      <Formik
+        initialValues={{
+          color: "",
+          code: ''
+        }}
+        onSubmit={values => {
+          axiosWithAuth()
+            .post('/colors', { color: values.color, code: { hex: values.code }, id: Date.now() })
+            .then(res => setChecker(++checker))
+            .catch(err => { console.log(err) })
+        }}>
+        <Form>
+          <Field type='text' name='color'></Field>
+          <Field type='text' name='code'></Field>
+
+          <button type='submit'>Submit</button>
+        </Form>
+      </Formik>
     </div>
   );
 };
